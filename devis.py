@@ -525,26 +525,12 @@ with tab4:
     st.markdown("---")
     st.subheader("📥 Téléchargements")
     
-    col_down1, col_down2 = st.columns(2)
-    
-    with col_down1:
-        # Téléchargement CSV
-        csv = df_devis.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="📄 Télécharger le devis (CSV / Excel)",
-            data=csv,
-            file_name=f"devis_fondations_{nom_projet.lower().replace(' ', '_')}.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
-
-    with col_down2:
-        # Téléchargement PDF
-        pdf_bytes = generate_pdf(nom_projet, devise, df_devis, grand_total)
-        st.download_button(
-            label="📑 Télécharger le devis officiel (PDF)",
-            data=pdf_bytes,
-            file_name=f"devis_fondations_{nom_projet.lower().replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True,
+# Téléchargement PDF
+    pdf_bytes = generate_pdf(nom_projet, devise, df_devis, grand_total)
+    st.download_button(
+        label="📑 Télécharger le devis officiel (PDF)",
+        data=pdf_bytes,
+        file_name=f"devis_fondations_{nom_projet.lower().replace(' ', '_')}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
         )
