@@ -258,7 +258,7 @@ with tab3:
     q1, q2, q3, q4 = st.columns(4)
     q1.metric("Ciment (Sacs de 50kg)", f"{total_sacs_ciment} sacs")
     q2.metric("Sable", f"{total_vol_sable:.2f} m³")
-    q3.metric("Gravier (15/25)", f"{total_vol_gravier:.2f} m³")
+    q3.metric("Gravier (8/16)", f"{total_vol_gravier:.2f} m³")
     q4.metric("Acier / Fer à béton", f"{poids_acier_kg:.0f} kg ({poids_acier_tonnes:.2f} t)")
 
     st.markdown("---")
@@ -325,7 +325,7 @@ with tab4:
         # Matériaux Fondations
         "Ciment (Sacs 50kg)",
         "Sable de chantier",
-        "Gravier (15/25)",
+        "Gravier (8/16)",
         "Acier / Fer à béton",
         # Main d'œuvre
         "Main d'œuvre (Coulage + Coffrage + Ferraillage)",
