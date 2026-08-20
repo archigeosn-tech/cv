@@ -1,8 +1,13 @@
 import math
+import io
 import pandas as pd
 import streamlit as st
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
-# Configuration de la page
+# Configuration de la page Streamlit
 st.set_page_config(
     page_title="Devis BTP - Terrassement & Fondations",
     page_icon="🏗️",
@@ -11,7 +16,7 @@ st.set_page_config(
 
 st.title("🏗️ Application de Chiffrage : Terrassement & Fondations")
 st.markdown(
-    "Calculez les volumes, quantifiez les matériaux requis (ciment, sable, gravier, fer) et générez un devis global."
+    "Calculez les volumes, quantifiez les matériaux requis (ciment, sable, gravier, fer, briques) et générez un devis global imprimable en PDF."
 )
 
 # Sidebar - Configuration du Projet
@@ -112,29 +117,47 @@ with tab2:
     vol_bp = surf_bp * ep_bp
 
     st.markdown("---")
-    st.subheader("b) Semelles Isolées (Pieds de Poteaux)")
-    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-    with col_s1:
-        nb_semelles = st.number_input(
-            "Nombre de semelles", min_value=0, value=12, step=1
-        )
-    with col_s2:
-        l_sem = st.number_input(
-            "Longueur semelle (m)", min_value=0.0, value=1.2, step=0.1
-        )
-    with col_s3:
-        w_sem = st.number_input(
-            "Largeur semelle (m)", min_value=0.0, value=1.2, step=0.1
-        )
-    with col_s4:
-        h_sem = st.number_input(
-            "Hauteur/Épaisseur semelle (m)",
-            min_value=0.0,
-            value=0.4,
-            step=0.05,
-        )
-    vol_semelles_isolees = nb_semelles * (l_sem * w_sem * h_sem)
+    st.subheader("b) Semelles Isolées (3 Types : S1, S2, S3)")
+    
+    st.markdown("##### 📌 Semelles Type S1")
+    col_s1_1, col_s1_2, col_s1_3, col_s1_4 = st.columns(4)
+    with col_s1_1:
+        nb_s1 = st.number_input("Nombre de semelles S1", min_value=0, value=6, step=1)
+    with col_s1_2:
+        l_s1 = st.number_input("Longueur S1 (m)", min_value=0.0, value=1.0, step=0.1)
+    with col_s1_3:
+        w_s1 = st.number_input("Largeur S1 (m)", min_value=0.0, value=1.0, step=0.1)
+    with col_s1_4:
+        h_s1 = st.number_input("Hauteur S1 (m)", min_value=0.0, value=0.35, step=0.05)
+    vol_s1 = nb_s1 * (l_s1 * w_s1 * h_s1)
 
+    st.markdown("##### 📌 Semelles Type S2")
+    col_s2_1, col_s2_2, col_s2_3, col_s2_4 = st.columns(4)
+    with col_s2_1:
+        nb_s2 = st.number_input("Nombre de semelles S2", min_value=0, value=4, step=1)
+    with col_s2_2:
+        l_s2 = st.number_input("Longueur S2 (m)", min_value=0.0, value=1.2, step=0.1)
+    with col_s2_3:
+        w_s2 = st.number_input("Largeur S2 (m)", min_value=0.0, value=1.2, step=0.1)
+    with col_s2_4:
+        h_s2 = st.number_input("Hauteur S2 (m)", min_value=0.0, value=0.40, step=0.05)
+    vol_s2 = nb_s2 * (l_s2 * w_s2 * h_s2)
+
+    st.markdown("##### 📌 Semelles Type S3")
+    col_s3_1, col_s3_2, col_s3_3, col_s3_4 = st.columns(4)
+    with col_s3_1:
+        nb_s3 = st.number_input("Nombre de semelles S3", min_value=0, value=2, step=1)
+    with col_s3_2:
+        l_s3 = st.number_input("Longueur S3 (m)", min_value=0.0, value=1.5, step=0.1)
+    with col_s3_3:
+        w_s3 = st.number_input("Largeur S3 (m)", min_value=0.0, value=1.5, step=0.1)
+    with col_s3_4:
+        h_s3 = st.number_input("Hauteur S3 (m)", min_value=0.0, value=0.45, step=0.05)
+    vol_s3 = nb_s3 * (l_s3 * w_s3 * h_s3)
+
+    vol_semelles_isolees = vol_s1 + vol_s2 + vol_s3
+
+    st.markdown("---")
     st.subheader("c) Semelles Filantes (Rifi / Rigoles)")
     col_sf1, col_sf2, col_sf3 = st.columns(3)
     with col_sf1:
@@ -196,7 +219,36 @@ with tab2:
     vol_longrines = lin_longrine * w_longrine * h_longrine
 
     st.markdown("---")
-    st.subheader("f) Dallage / Hérissonnage (Dalle de forme)")
+    st.subheader("f) Soubassement en Briques Pleines / Agglos Pleins")
+    col_br1, col_br2, col_br3 = st.columns(3)
+    with col_br1:
+        lin_mur_soub = st.number_input(
+            "Mètres linéaires de mur de soubassement (m)",
+            min_value=0.0,
+            value=45.0,
+            step=1.0,
+        )
+    with col_br2:
+        h_mur_soub = st.number_input(
+            "Hauteur du mur de soubassement (m)",
+            min_value=0.0,
+            value=0.6,
+            step=0.1,
+        )
+    with col_br3:
+        briques_par_m2 = st.number_input(
+            "Nombre de briques pleines par m² (ex: 12.5)",
+            min_value=1.0,
+            value=12.5,
+            step=0.5,
+        )
+    
+    surf_mur_soub = lin_mur_soub * h_mur_soub
+    nb_briques_raw = surf_mur_soub * briques_par_m2
+    nb_briques_total = math.ceil(nb_briques_raw * 1.05)  # 5% de perte
+
+    st.markdown("---")
+    st.subheader("g) Dallage / Hérissonnage")
     col_d1, col_d2 = st.columns(2)
     with col_d1:
         surf_dallage = st.number_input(
@@ -208,7 +260,6 @@ with tab2:
         )
     vol_dallage = surf_dallage * ep_dallage
 
-    # Récapitulatif Béton
     vol_beton_arme_total = (
         vol_semelles_isolees
         + vol_semelles_filantes
@@ -217,9 +268,12 @@ with tab2:
         + vol_dallage
     )
 
-    st.success(f"**Volume Béton de Propreté (Non Armé) : {vol_bp:.2f} m³**")
+    st.success(f"**Volume Béton de Propreté : {vol_bp:.2f} m³**")
     st.success(
         f"**Volume Béton Armé Total (Semelles, Poteaux, Longrines, Dalle) : {vol_beton_arme_total:.2f} m³**"
+    )
+    st.info(
+        f"**Briques Pleines Soubassement : {nb_briques_total} unités ({surf_mur_soub:.2f} m² avec 5% de perte)**"
     )
 
 
@@ -236,99 +290,181 @@ with tab3:
     ratio_acier_ba = st.sidebar.number_input(
         "Ratio Acier/Fer à béton (kg/m³)", value=90, step=5
     )
+    ciment_par_brique = st.sidebar.number_input(
+        "Ciment mortier pose par brique (kg)", value=1.5, step=0.1
+    )
 
-    # Béton Armé Calculs
+    # Calculs Matériaux
     sacs_ciment_ba = math.ceil((vol_beton_arme_total * dosage_ciment_ba) / 50)
-    vol_sable_ba = vol_beton_arme_total * 0.40  # env 400L par m3
-    vol_gravier_ba = vol_beton_arme_total * 0.80  # env 800L par m3
+    vol_sable_ba = vol_beton_arme_total * 0.40
+    vol_gravier_ba = vol_beton_arme_total * 0.80
     poids_acier_kg = vol_beton_arme_total * ratio_acier_ba
     poids_acier_tonnes = poids_acier_kg / 1000
 
-    # Béton Propreté Calculs (dosé à 150-200 kg/m3)
     sacs_ciment_bp = math.ceil((vol_bp * 200) / 50)
     vol_sable_bp = vol_bp * 0.45
     vol_gravier_bp = vol_bp * 0.80
 
-    # Cumul
-    total_sacs_ciment = sacs_ciment_ba + sacs_ciment_bp
-    total_vol_sable = vol_sable_ba + vol_sable_bp
+    sacs_ciment_briques = math.ceil((nb_briques_total * ciment_par_brique) / 50)
+    vol_sable_briques = nb_briques_total * 0.003
+
+    total_sacs_ciment = sacs_ciment_ba + sacs_ciment_bp + sacs_ciment_briques
+    total_vol_sable = vol_sable_ba + vol_sable_bp + vol_sable_briques
     total_vol_gravier = vol_gravier_ba + vol_gravier_bp
 
     st.subheader("📦 Quantités Nécessaires")
-    q1, q2, q3, q4 = st.columns(4)
-    q1.metric("Ciment (Sacs de 50kg)", f"{total_sacs_ciment} sacs")
+    q1, q2, q3, q4, q5 = st.columns(5)
+    q1.metric("Ciment (Sacs 50kg)", f"{total_sacs_ciment} sacs")
     q2.metric("Sable", f"{total_vol_sable:.2f} m³")
     q3.metric("Gravier (8/16)", f"{total_vol_gravier:.2f} m³")
-    q4.metric("Acier / Fer à béton", f"{poids_acier_kg:.0f} kg ({poids_acier_tonnes:.2f} t)")
+    q4.metric("Acier / Fer", f"{poids_acier_kg:.0f} kg")
+    q5.metric("Briques Pleines", f"{nb_briques_total} u")
 
     st.markdown("---")
     st.subheader("💵 Prix Unitaires des Matériaux")
 
-    pu_col1, pu_col2, pu_col3, pu_col4 = st.columns(4)
+    pu_col1, pu_col2, pu_col3, pu_col4, pu_col5 = st.columns(5)
     with pu_col1:
-        prix_sac_ciment = st.number_input(
-            f"Prix 1 Sac de Ciment ({devise})",
-            min_value=0,
-            value=4500,
-            step=100,
-        )
+        prix_sac_ciment = st.number_input(f"Prix 1 Sac Ciment ({devise})", min_value=0, value=4500, step=100)
     with pu_col2:
-        prix_m3_sable = st.number_input(
-            f"Prix 1 m³ Sable ({devise})", min_value=0, value=7000, step=500
-        )
+        prix_m3_sable = st.number_input(f"Prix 1 m³ Sable ({devise})", min_value=0, value=7000, step=500)
     with pu_col3:
-        prix_m3_gravier = st.number_input(
-            f"Prix 1 m³ Gravier ({devise})", min_value=0, value=15000, step=500
-        )
+        prix_m3_gravier = st.number_input(f"Prix 1 m³ Gravier ({devise})", min_value=0, value=15000, step=500)
     with pu_col4:
-        prix_kg_acier = st.number_input(
-            f"Prix 1 kg d'Acier ({devise})", min_value=0, value=650, step=25
-        )
+        prix_kg_acier = st.number_input(f"Prix 1 kg Acier ({devise})", min_value=0, value=650, step=25)
+    with pu_col5:
+        prix_unitaire_brique = st.number_input(f"Prix 1 Brique ({devise})", min_value=0, value=350, step=25)
 
-    # Coûts matériaux
     cost_ciment = total_sacs_ciment * prix_sac_ciment
     cost_sable = total_vol_sable * prix_m3_sable
     cost_gravier = total_vol_gravier * prix_m3_gravier
     cost_acier = poids_acier_kg * prix_kg_acier
+    cost_briques = nb_briques_total * prix_unitaire_brique
 
     st.subheader("🔨 Main d'œuvre et Coffrage")
-    col_mo1, col_mo2 = st.columns(2)
+    col_mo1, col_mo2, col_mo3 = st.columns(3)
     with col_mo1:
-        pu_mo_beton = st.number_input(
-            f"Main d'œuvre coulage béton ({devise}/m³)",
-            min_value=0,
-            value=15000,
-            step=1000,
-        )
+        pu_mo_beton = st.number_input(f"Main d'œuvre coulage béton ({devise}/m³)", min_value=0, value=15000, step=1000)
     with col_mo2:
-        forfait_coffrage = st.number_input(
-            f"Forfait Bois de coffrage & Ferraillage ({devise})",
-            min_value=0,
-            value=250000,
-            step=10000,
-        )
+        pu_mo_brique = st.number_input(f"Main d'œuvre pose brique ({devise}/unité)", min_value=0, value=100, step=10)
+    with col_mo3:
+        forfait_coffrage = st.number_input(f"Forfait Bois & Ferraillage ({devise})", min_value=0, value=250000, step=10000)
 
-    cost_mo = (vol_beton_arme_total + vol_bp) * pu_mo_beton + forfait_coffrage
+    cost_mo = (vol_beton_arme_total + vol_bp) * pu_mo_beton + (nb_briques_total * pu_mo_brique) + forfait_coffrage
 
 
 # ---------------------------------------------------------
-# TAB 4 : DEVIS GLOBAL
+# TAB 4 : DEVIS GLOBAL & GENERATION PDF
 # ---------------------------------------------------------
+def generate_pdf(nom_projet, devise, df_devis, grand_total):
+    """Génère un PDF du devis en mémoire à l'aide de ReportLab"""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "DocTitle",
+        parent=styles["Heading1"],
+        fontSize=18,
+        textColor=colors.HexColor("#1A365D"),
+        spaceAfter=10,
+    )
+    subtitle_style = ParagraphStyle(
+        "SubTitle",
+        parent=styles["Normal"],
+        fontSize=11,
+        textColor=colors.HexColor("#4A5568"),
+        spaceAfter=15,
+    )
+    cell_style = ParagraphStyle(
+        "TableCell",
+        parent=styles["Normal"],
+        fontSize=9,
+        leading=11,
+    )
+    header_cell_style = ParagraphStyle(
+        "HeaderCell",
+        parent=styles["Normal"],
+        fontSize=10,
+        leading=12,
+        textColor=colors.white,
+        fontName="Helvetica-Bold",
+    )
+
+    elements = []
+
+    # En-tête
+    elements.append(Paragraph("🏗️ DEVIS ESTIMATIF - TERRASSEMENT & FONDATIONS", title_style))
+    elements.append(Paragraph(f"<b>Projet / Client :</b> {nom_projet}", subtitle_style))
+    elements.append(Paragraph(f"<b>Devise utilisée :</b> {devise}", subtitle_style))
+    elements.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#2B6CB0"), spaceAfter=15))
+
+    # Tableau du Devis
+    table_data = [[
+        Paragraph("Désignation / Poste", header_cell_style),
+        Paragraph("Quantité", header_cell_style),
+        Paragraph(f"Prix Unitaire ({devise})", header_cell_style),
+        Paragraph(f"Montant Total ({devise})", header_cell_style),
+    ]]
+
+    for _, row in df_devis.iterrows():
+        table_data.append([
+            Paragraph(str(row["Poste / Désignation"]), cell_style),
+            Paragraph(str(row["Quantité"]), cell_style),
+            Paragraph(str(row[f"Prix Unitaire ({devise})"]), cell_style),
+            Paragraph(f"{row[f'Montant Total ({devise})']:,.0f}", cell_style),
+        ])
+
+    # Total Général
+    table_data.append([
+        Paragraph("<b>TOTAL GÉNÉRAL DEVIS</b>", cell_style),
+        Paragraph("", cell_style),
+        Paragraph("", cell_style),
+        Paragraph(f"<b>{grand_total:,.0f} {devise}</b>", cell_style),
+    ])
+
+    # Style du tableau
+    t = Table(table_data, colWidths=[200, 120, 100, 110])
+    t.setStyle(
+        TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2B6CB0")),
+            ("ALIGN", (0, 0), (-1, -1), "LEFT"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -2), 0.5, colors.HexColor("#CBD5E0")),
+            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#EDF2F7")),
+            ("LINEABOVE", (0, -1), (-1, -1), 1.5, colors.HexColor("#2B6CB0")),
+        ])
+    )
+    elements.append(t)
+    
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("<i>Devis généré automatiquement par l'application de chiffrage BTP.</i>", cell_style))
+
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer
+
 with tab4:
     st.header(f"📜 Devis Estimatif - {nom_projet}")
 
-    # Composition du tableau
     items = [
-        # Terrassement
         "Terrassement - Excavation / Fouilles",
         "Terrassement - Évacuation des terres",
-        # Matériaux Fondations
         "Ciment (Sacs 50kg)",
         "Sable de chantier",
         "Gravier (8/16)",
         "Acier / Fer à béton",
-        # Main d'œuvre
-        "Main d'œuvre (Coulage + Coffrage + Ferraillage)",
+        "Briques Pleines (Soubassement)",
+        "Main d'œuvre globale (Coulage + Pose Briques + Coffrage + Ferraillage)",
     ]
 
     quantities = [
@@ -338,7 +474,8 @@ with tab4:
         f"{total_vol_sable:.2f} m³",
         f"{total_vol_gravier:.2f} m³",
         f"{poids_acier_kg:.0f} kg",
-        f"{(vol_beton_arme_total + vol_bp):.2f} m³ (vol. total)",
+        f"{nb_briques_total} unités",
+        f"Forfait + {(vol_beton_arme_total + vol_bp):.2f}m³ béton + {nb_briques_total} briques",
     ]
 
     unit_prices = [
@@ -348,7 +485,8 @@ with tab4:
         prix_m3_sable,
         prix_m3_gravier,
         prix_kg_acier,
-        pu_mo_beton,
+        prix_unitaire_brique,
+        "-",
     ]
 
     totals = [
@@ -358,6 +496,7 @@ with tab4:
         cost_sable,
         cost_gravier,
         cost_acier,
+        cost_briques,
         cost_mo,
     ]
 
@@ -373,7 +512,6 @@ with tab4:
         }
     )
 
-    # Affichage du tableau formaté
     df_display = df_devis.copy()
     df_display[f"Montant Total ({devise})"] = df_display[
         f"Montant Total ({devise})"
@@ -384,11 +522,15 @@ with tab4:
 
     st.subheader(f"🔴 **TOTAL GÉNÉRAL DEVIS : {grand_total:,.0f} {devise}**")
 
-    # Export des données en CSV
-    csv = df_devis.to_csv(index=False).encode("utf-8")
+    st.markdown("---")
+    st.subheader("📥 Téléchargements")
+    
+# Téléchargement PDF
+    pdf_bytes = generate_pdf(nom_projet, devise, df_devis, grand_total)
     st.download_button(
-        label="📥 Télécharger le devis (CSV)",
-        data=csv,
-        file_name=f"devis_fondations_{nom_projet.lower().replace(' ', '_')}.csv",
-        mime="text/csv",
-    )
+        label="📑 Télécharger le devis officiel (PDF)",
+        data=pdf_bytes,
+        file_name=f"devis_fondations_{nom_projet.lower().replace(' ', '_')}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        )
